@@ -14,6 +14,7 @@ import getopt, sys, IN, netifaces
 import socket, select
 import struct
 import time
+import binascii #output binary to console
 from datetime import datetime, timedelta
 
 
@@ -75,9 +76,6 @@ if total_bytes:
     print "Will exit when %d bytes have been received" % total_bytes
 byte_counter=0
 
-#Reset Sequence
-lastsequence=0
-
 #if quit on timeout
 if timeout:
     print "Will exit when %d seconds have been elapsed" % timeout
@@ -88,26 +86,19 @@ if timeout:
 print 'waiting to receive message'
 while True:
     try:
-        data, address = sock.recvfrom(1024)
+        data, source = sock.recvfrom(1024)
     except: 
         print "Waiting for data..."
-    if address[0]=='10.10.20.36' and address[1]==52385 and data:
-        #print "Received %d bytes" % (len(data))
+    if data:
+        print "Received %d bytes" % (len(data))
         byte_counter += len(data)
         if verbose:
-            #print "From: %s,Data: %s" % (address, data.encode('hex'))
-            #print "From: %s,Data: %s" % (address, data[2:10].encode('hex'))
-            sequence=struct.unpack_from('>Q', data,2)[0]
-            #print "From: %s,Sequence: %s" % (address, sequence)
-            if lastsequence > 0:
-                if lastsequence + 1 != sequence:
-                    print "Sequence Gaps from %d to %d" % (lastsequence, sequence)
-            lastsequence=sequence
-            
-    if total_bytes:
-        if byte_counter >= total_bytes:
-            print "Data limit reached: %d bytes received" % byte_counter
-            sys.exit(0)
+            #print "Source: %s data: %s" % ( str(source) , hexdump.hexdump(data))
+            print "Source: %s data: %s" % ( str(source) , binascii.b2a_qp(data,True,False,True))
+        if total_bytes:
+            if byte_counter >= total_bytes:
+               print "Data limit reached: %d bytes received" % byte_counter
+               sys.exit(0)
     if timeout and  datetime.now() >= end_time:
         if byte_counter == 0:
             print "No data received, feed does not seem to work"
@@ -115,6 +106,6 @@ while True:
         else:
             print "Received %d bytes in %d seconds.\nFeed seems operational." % (byte_counter, timeout)
             sys.exit(0)
-    #time.sleep(0.1)
+    #time.sleep(1)
 
 
